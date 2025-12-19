@@ -22,30 +22,36 @@ namespace SevenWondersDuel {
 		void clearScreen();
 		void renderMainMenu();
 
-        // 打印普通消息或错误
+        // 设置错误信息（将在下一次 renderGame 中显示）
+        void setLastError(const std::string& msg);
+        void clearLastError();
+
+        // 打印普通消息
 		void printMessage(const std::string& msg);
-		void printError(const std::string& msg);
+        // 打印回合信息
         void printTurnInfo(const Player* player);
 
 		// 获取用户输入 (人类玩家使用) - 包含内部交互循环
 		Action promptHumanAction(const GameModel& model, GameState state);
 
-		void renderGame(const GameModel& model);
+        // 暴露渲染接口供 AI 回合使用
+        void renderGameForAI(const GameModel& model);
 
 	private:
-        // --- 内部状态 (每帧渲染时更新) ---
-        // 用于将界面显示的短ID映射回内部真实ID
+        // --- 内部状态 ---
+        std::string m_lastError; // 存储上一条错误信息
+
+        // ID 映射上下文
         struct RenderContext {
-            std::map<int, std::string> cardIdMap;   // Display ID (1, 2...) -> Card String ID
-            std::map<int, std::string> wonderIdMap; // Display ID (1, 2...) -> Wonder String ID (针对当前玩家)
-            std::map<int, ProgressToken> tokenIdMap;// Display ID (1, 2...) -> Token Enum
-            std::vector<std::string> draftWonderIds; // Index -> Wonder ID
-            std::vector<std::string> discardIds;    // Index -> Card ID
+            std::map<int, std::string> cardIdMap;   // Display ID -> Card ID
+            std::map<int, std::string> wonderIdMap; // Display ID -> Wonder ID
+            std::map<int, ProgressToken> tokenIdMap;// Display ID -> Token
+            std::vector<std::string> draftWonderIds; // Index 0-based -> Wonder ID
         } ctx;
 
 		// --- 渲染组件 ---
 
-
+		void renderGame(const GameModel& model);
         void renderDraftPhase(const GameModel& model);
 
         // 基础绘图
@@ -69,6 +75,7 @@ namespace SevenWondersDuel {
         void renderPyramid(const GameModel& model);
         void renderActionLog(const std::vector<std::string>& log);
         void renderCommandHelp(bool isDraft);
+        void renderErrorMessage(); // 专门渲染错误区域
 
         // 辅助页面
 		void renderPlayerDetailFull(const Player& p, const Player& opp);
@@ -79,7 +86,7 @@ namespace SevenWondersDuel {
         void renderFullLog(const std::vector<std::string>& log);
 
         // 内部辅助
-        int parseId(const std::string& input, char prefix); // 解析 "C1" -> 1, "1" -> 1
+        int parseId(const std::string& input, char prefix);
 	};
 
 }

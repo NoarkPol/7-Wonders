@@ -21,7 +21,7 @@ namespace SevenWondersDuel {
             Action act = view.promptHumanAction(controller.getModel(), controller.getState());
             if (act.type == static_cast<ActionType>(-1)) {
                 // 用户输入格式错误或取消，重试
-                view.printError("Invalid input format. Please try again.");
+                view.setLastError("Invalid input format. Please try again.");
                 continue;
             }
             return act;

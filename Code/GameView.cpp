@@ -39,7 +39,7 @@ namespace SevenWondersDuel {
         if (input.empty()) return -1;
         std::string numPart = input;
 
-        // 允许用户输入 "C1" 或 "1"
+        // 允许 "C1" 或 "1"
         if (toupper(input[0]) == prefix) {
             if (input.size() > 1) numPart = input.substr(1);
             else return -1;
@@ -52,20 +52,28 @@ namespace SevenWondersDuel {
         }
     }
 
+    void GameView::setLastError(const std::string& msg) {
+        m_lastError = msg;
+    }
+
+    void GameView::clearLastError() {
+        m_lastError = "";
+    }
+
     // ==========================================================
     //  颜色与文本
     // ==========================================================
 
     std::string GameView::getCardColorCode(CardType t) {
         switch(t) {
-            case CardType::RAW_MATERIAL: return "\033[33m"; // Brown
-            case CardType::MANUFACTURED: return "\033[90m"; // Grey
-            case CardType::CIVILIAN: return "\033[34m";     // Blue
-            case CardType::SCIENTIFIC: return "\033[32m";   // Green
-            case CardType::COMMERCIAL: return "\033[93m";   // Yellow
-            case CardType::MILITARY: return "\033[31m";     // Red
-            case CardType::GUILD: return "\033[35m";        // Purple
-            case CardType::WONDER: return "\033[36m";       // Cyan
+            case CardType::RAW_MATERIAL: return "\033[33m";
+            case CardType::MANUFACTURED: return "\033[90m";
+            case CardType::CIVILIAN: return "\033[34m";
+            case CardType::SCIENTIFIC: return "\033[32m";
+            case CardType::COMMERCIAL: return "\033[93m";
+            case CardType::MILITARY: return "\033[31m";
+            case CardType::GUILD: return "\033[35m";
+            case CardType::WONDER: return "\033[36m";
             default: return "\033[0m";
         }
     }
@@ -91,12 +99,9 @@ namespace SevenWondersDuel {
         std::cout << "\033[96m[INFO] " << msg << "\033[0m\n";
     }
 
-    void GameView::printError(const std::string& msg) {
-        std::cout << "\033[91m[ERROR] " << msg << "\033[0m\n";
-    }
-
     void GameView::printTurnInfo(const Player* player) {
-        // Dashboard contains turn info
+        // AI Turn uses this
+        std::cout << "\n >>> " << player->name << "'s Turn...\n";
     }
 
     std::string GameView::getTokenName(ProgressToken t) {
@@ -170,6 +175,14 @@ namespace SevenWondersDuel {
         std::cout << "  Input > ";
     }
 
+    void GameView::renderErrorMessage() {
+        if (!m_lastError.empty()) {
+            std::cout << "\033[1;31m [!] " << m_lastError << "\033[0m\n";
+        } else {
+            std::cout << "\n"; // Placeholder to keep layout stable
+        }
+    }
+
     // --- 奇迹轮抽阶段 ---
     void GameView::renderDraftPhase(const GameModel& model) {
         clearScreen();
@@ -178,12 +191,11 @@ namespace SevenWondersDuel {
         printLine('=');
         std::cout << "\n";
 
-        // 只显示当前玩家信息
         const Player* p = model.getCurrentPlayer();
         std::string nameTag = "\033[1;33m[" + p->name + "]\033[0m";
         std::cout << "  " << nameTag << " Select a Wonder to keep:\n\n";
 
-        ctx.draftWonderIds.clear(); // 清空旧数据
+        ctx.draftWonderIds.clear();
         int idx = 1;
         for (const auto& w : model.draftPool) {
             ctx.draftWonderIds.push_back(w->id);
@@ -195,6 +207,7 @@ namespace SevenWondersDuel {
             idx++;
         }
         printLine('-');
+        renderErrorMessage();
         renderCommandHelp(true);
     }
 
@@ -212,7 +225,6 @@ namespace SevenWondersDuel {
         ss << " P2";
         std::cout << ss.str() << "\n";
 
-        // Loot Tokens
         std::cout << "            "
                   << (board.militaryTrack.lootTokens[1] ? "[$ 5] " : "      ")
                   << (board.militaryTrack.lootTokens[0] ? "[$ 2]" : "     ")
@@ -229,7 +241,6 @@ namespace SevenWondersDuel {
         for (size_t i = 0; i < tokens.size(); ++i) {
             int displayId = i + 1;
             ctx.tokenIdMap[displayId] = tokens[i];
-            // [S1]Name
             std::cout << "\033[32m[S" << displayId << "]" << getTokenName(tokens[i]) << "\033[0m  ";
         }
         std::cout << "\n";
@@ -254,16 +265,13 @@ namespace SevenWondersDuel {
                   << " VP:\033[36m" << displayVP << "\033[0m "
                   << formatResourcesCompact(p) << "\n";
 
-        // Wonders with IDs only for current player
         std::cout << "Wonder: ";
         if (isCurrent) ctx.wonderIdMap.clear();
 
-        // Built
         for(auto w : p.builtWonders) {
             std::cout << "\033[32m[X]" << w->name << "\033[0m  ";
         }
 
-        // Unbuilt (Needs IDs for current player)
         int wIdx = 1;
         for(auto w : p.unbuiltWonders) {
             if (isCurrent) {
@@ -287,44 +295,29 @@ namespace SevenWondersDuel {
         const auto& slots = model.board->cardStructure.slots;
         if (slots.empty()) return;
 
-        // Reset Card Map
         ctx.cardIdMap.clear();
 
-        // Group by row
         std::map<int, std::vector<const CardSlot*>> rows;
         int maxRow = 0;
-        // Use a persistent counter for display ID across the whole pyramid structure
-        // UI design implies numbering follows the structure order (1..20)
-        int displayIdCounter = 1;
 
-        // We need to iterate slots in the order they were added to ensure consistent numbering
         for (const auto& slot : slots) {
             rows[slot.row].push_back(&slot);
             if (slot.row > maxRow) maxRow = slot.row;
         }
 
-        // Render each row
         for (int r = 0; r <= maxRow; ++r) {
             const auto& rowSlots = rows[r];
             if (rowSlots.empty()) continue;
 
-            // Centering logic
-            int cardWidth = 11; // "[ C12 ]  "
+            int cardWidth = 11;
             int rowLen = rowSlots.size() * cardWidth;
             int padding = (80 - rowLen) / 2;
             std::cout << std::string(std::max(0, padding), ' ');
 
             for (const auto* slot : rowSlots) {
-                // Determine ID for this slot (based on its index in the flat slots vector)
-                // Note: slots vector is ordered by row usually.
-                // Let's rely on the pointer arithmetic or index stored in slot
-                // Actually Board.h stores `index` as row-index.
-                // Let's just use the `displayIdCounter` logic or mapping based on `slots` iteration order.
-                // Better: find the slot in the main vector to get its absolute index 1..20
-                int absIndex = -1;
-                for(size_t k=0; k<slots.size(); ++k) {
-                    if (&slots[k] == slot) { absIndex = k + 1; break; }
-                }
+                // Calculate absolute ID based on address offset or similar consistent index
+                // Since slots vector doesn't change order, index + 1 is safe
+                int absIndex = (&(*slot) - &slots[0]) + 1;
 
                 if (slot->isRemoved) {
                     std::cout << "           ";
@@ -332,16 +325,12 @@ namespace SevenWondersDuel {
                     std::cout << " [\033[90m ? ? ? \033[0m] ";
                 } else {
                     Card* c = slot->cardPtr;
-                    // Register ID for interaction
                     ctx.cardIdMap[absIndex] = c->id;
 
                     std::string color = getCardColorCode(c->type);
-                    // Format: [ C1 ] or [ C12 ]
                     std::stringstream ss;
                     ss << " C" << absIndex << " ";
                     std::string label = ss.str();
-
-                    // Pad label to fit width 7 inside brackets
                     while(label.length() < 7) label += " ";
 
                     std::cout << " [" << color << label << getResetColor() << "] ";
@@ -368,8 +357,8 @@ namespace SevenWondersDuel {
     void GameView::renderCommandHelp(bool isDraft) {
         std::cout << " [COMMANDS]\n";
         if (isDraft) {
-            std::cout << " - pick <ID>      : Pick a wonder (e.g., 'pick 1')\n";
-            std::cout << " - detail         : View your stats\n";
+            std::cout << " - pick <ID>        : Pick a wonder (e.g., 'pick 1')\n";
+            std::cout << " - detail           : View your stats\n";
         } else {
             std::cout << " - build <ID>       : Build card (e.g., 'build C1' or 'build 1')\n";
             std::cout << " - wonder <CID> <WID>: Build Wonder <WID> using card <CID> (e.g., 'wonder 1 W1')\n";
@@ -387,7 +376,13 @@ namespace SevenWondersDuel {
         renderPyramid(model);
         renderPlayerDashboard(*model.players[1], model.currentPlayerIndex == 1, *model.players[0]);
         renderActionLog(model.gameLog);
+        renderErrorMessage();
         renderCommandHelp(false);
+    }
+
+    // External interface for AI loop
+    void GameView::renderGameForAI(const GameModel& model) {
+        renderGame(model);
     }
 
     // ==========================================================
@@ -422,7 +417,7 @@ namespace SevenWondersDuel {
 
         printLine('=');
         std::cout << " (Press Enter to return)";
-        std::cin.get();
+        std::cin.get(); // Wait for enter
     }
 
     void GameView::renderCardDetail(const Card& c) {
@@ -496,15 +491,31 @@ namespace SevenWondersDuel {
         Action act;
         act.type = static_cast<ActionType>(-1);
 
+        // 清除残留输入 (可选，但在循环内需要小心)
+        // std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Don't do this inside loop blindly
+
         while (true) {
             bool isDraft = (model.currentAge == 0);
+
+            // 每次循环重新渲染，保证 map 是最新的，且显示上一轮的错误
             if (isDraft) renderDraftPhase(model);
             else renderGame(model);
 
             std::cout << "\n " << model.getCurrentPlayer()->name << " > ";
 
             std::string line;
-            if (!std::getline(std::cin, line) || line.empty()) continue;
+            if (!std::getline(std::cin, line)) {
+                // EOF safety
+                act.type = ActionType::DISCARD_FOR_COINS;
+                return act;
+            }
+
+            // 处理空行：只刷新界面，不报错
+            if (line.empty()) continue;
+
+            // 清除之前的错误信息，因为用户输入了新命令
+            // 注意：如果命令无效（如 build 99），我们会再次设置错误并 continue
+            clearLastError();
 
             std::stringstream ss(line);
             std::string cmd; ss >> cmd;
@@ -513,36 +524,41 @@ namespace SevenWondersDuel {
             // --- 1. Draft Logic ---
             if (isDraft) {
                 if (cmd == "pick") {
-                    int idx = parseId(arg1, ' '); // simple int
+                    int idx = parseId(arg1, ' ');
                     if (idx >= 1 && idx <= (int)ctx.draftWonderIds.size()) {
                         act.type = ActionType::DRAFT_WONDER;
-                        act.targetWonderId = ctx.draftWonderIds[idx-1]; // Index 0-based
+                        act.targetWonderId = ctx.draftWonderIds[idx-1];
                         return act;
                     } else {
-                        printError("Invalid index."); std::cin.get();
+                        setLastError("Invalid Wonder ID. Use 1, 2, 3...");
                     }
                 }
                 else if (cmd == "detail") { renderPlayerDetailFull(*model.getCurrentPlayer(), *model.getOpponent()); }
                 else if (cmd == "info") {
-                    // Support info 1
                     int idx = parseId(arg1, ' ');
                      if (idx >= 1 && idx <= (int)model.draftPool.size()) {
                          renderWonderDetail(*model.draftPool[idx-1]);
+                     } else {
+                         setLastError("Info ID not found.");
                      }
+                } else {
+                     setLastError("Unknown command. Try 'pick 1'.");
                 }
+
+                // 如果是有效动作，renderGame 会被 main.cpp 的逻辑流再次调用或状态切换
+                if (act.type != static_cast<ActionType>(-1)) return act;
                 continue;
             }
 
             // --- 2. Main Game Logic ---
             if (cmd == "build" || cmd == "discard") {
-                int id = parseId(arg1, 'C'); // Support 'C1' or '1'
+                int id = parseId(arg1, 'C');
                 if (ctx.cardIdMap.count(id)) {
                     act.type = (cmd == "build") ? ActionType::BUILD_CARD : ActionType::DISCARD_FOR_COINS;
                     act.targetCardId = ctx.cardIdMap[id];
                     return act;
                 } else {
-                    printError("Invalid Card ID (Use C1, C2...). Check if card is face up.");
-                    std::cout << "(Press Enter)"; std::cin.get();
+                    setLastError("Card ID not found or covered. Use C1, C2...");
                 }
             }
             else if (cmd == "wonder") {
@@ -556,19 +572,16 @@ namespace SevenWondersDuel {
                     act.targetWonderId = ctx.wonderIdMap[wId];
                     return act;
                 } else {
-                    printError("Invalid Card or Wonder ID (e.g., 'wonder C1 W1')");
-                    std::cout << "(Press Enter)"; std::cin.get();
+                    setLastError("Invalid Card/Wonder ID. Format: wonder C<ID> W<ID>");
                 }
             }
             else if (cmd == "info") {
-                // Try C<id>, W<id>, S<id>
                 int cId = parseId(arg1, 'C');
                 int wId = parseId(arg1, 'W');
                 int sId = parseId(arg1, 'S');
 
                 if (cId != -1 && ctx.cardIdMap.count(cId)) {
-                    // Need to find the Card object. Map stores ID string.
-                    // This is slow but safe for UI
+                    // Slow search but safe
                     for(const auto& c : model.allCards) {
                         if (c.id == ctx.cardIdMap[cId]) { renderCardDetail(c); break; }
                     }
@@ -582,7 +595,7 @@ namespace SevenWondersDuel {
                     renderTokenDetail(ctx.tokenIdMap[sId]);
                 }
                 else {
-                    printError("ID not found or not visible."); std::cin.get();
+                    setLastError("ID not found. Use C1.. C20, W1..W4, S1..S5");
                 }
             }
             else if (cmd == "pile") renderDiscardPile(model.board->discardPile);
@@ -590,7 +603,10 @@ namespace SevenWondersDuel {
             else if (cmd == "detail") {
                  if (arg1 == "2") renderPlayerDetailFull(*model.players[1], *model.players[0]);
                  else renderPlayerDetailFull(*model.players[0], *model.players[1]);
+            } else {
+                setLastError("Unknown command.");
             }
         }
     }
+
 }
