@@ -28,8 +28,8 @@ namespace SevenWondersDuel {
 		// 获取用户输入 (核心交互循环)
 		Action promptHumanAction(const GameModel& model, GameState state);
 
-        // 暴露渲染接口供 AI 回合使用
-        void renderGameForAI(const GameModel& model);
+        // [Updated] 暴露渲染接口供 AI 回合使用，增加 state 参数
+        void renderGameForAI(const GameModel& model, GameState state);
 
 	private:
         // --- 内部状态 ---
@@ -79,7 +79,7 @@ namespace SevenWondersDuel {
 		void renderMilitaryTrack(const Board& board);
         void renderProgressTokens(const std::vector<ProgressToken>& tokens, bool isBoxContext = false);
 
-        // [Updated] Dashboard 增加 targetMode 用于摧毁阶段显示 ID
+        // Dashboard
 		void renderPlayerDashboard(const Player& p, bool isCurrent, const Player& opp, int& wonderCounter, bool targetMode = false);
 
         void renderPyramid(const GameModel& model);

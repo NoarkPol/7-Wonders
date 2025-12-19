@@ -102,7 +102,6 @@ namespace SevenWondersDuel {
         std::string s = ss.str(); return s.empty() ? "Free" : s;
     }
 
-    // [Update 2] 增强资源显示：包含多选一资源
     std::string GameView::formatResourcesCompact(const Player& p) {
         std::stringstream ss;
         ss << "W:" << p.fixedResources.at(ResourceType::WOOD) << " ";
@@ -112,7 +111,7 @@ namespace SevenWondersDuel {
         ss << "P:" << p.fixedResources.at(ResourceType::PAPER);
 
         if (!p.choiceResources.empty()) {
-            ss << " \033[93m+"; // 黄色加号提示
+            ss << " \033[93m+";
             for (const auto& choices : p.choiceResources) {
                 ss << "(";
                 for (size_t i = 0; i < choices.size(); ++i) {
@@ -126,7 +125,6 @@ namespace SevenWondersDuel {
         return ss.str();
     }
 
-    // [Update 2] 辅助：格式化科技符号
     std::string formatScienceSymbols(const Player& p) {
         std::stringstream ss;
         bool hasAny = false;
@@ -225,19 +223,16 @@ namespace SevenWondersDuel {
 
         int displayVP = p.getScore(opp) - (p.coins/3);
 
-        // 第一行：基础信息 + 资源 (包含 Choice)
         std::cout << nameTag
                   << " Coin:\033[33m" << p.coins << "\033[0m"
                   << " VP:\033[36m" << displayVP << "\033[0m "
                   << formatResourcesCompact(p) << "\n";
 
-        // [Update 2] 新增：科技符号行
         std::string scienceStr = formatScienceSymbols(p);
         if (!scienceStr.empty()) {
             std::cout << "Science: " << scienceStr << "\n";
         }
 
-        // 奇迹行
         std::cout << "Wonder: ";
         for(auto w : p.builtWonders) {
             int currentId = wonderCounter++;
@@ -288,10 +283,9 @@ namespace SevenWondersDuel {
             const auto& rowSlots = rows[r];
             if (rowSlots.empty()) continue;
 
-            int cardWidth = 11; // 假设标准卡牌显示宽度
+            int cardWidth = 11;
             int rowLen = rowSlots.size() * cardWidth;
 
-            // [Update 1] Age 3 Row 3 (中间层) 特殊处理：增加一个卡位的空隙
             bool isAge3SplitRow = (model.currentAge == 3 && r == 3);
             if (isAge3SplitRow) {
                 rowLen += cardWidth;
@@ -314,7 +308,6 @@ namespace SevenWondersDuel {
                     std::cout << " [" << getCardColorCode(c->type) << label << getResetColor() << "] ";
                 }
 
-                // [Update 1] 在第一张卡打印完后，如果是特殊分叉行，插入空隙
                 if (isAge3SplitRow && i == 0) {
                     std::cout << "           ";
                 }
@@ -340,7 +333,7 @@ namespace SevenWondersDuel {
         switch (state) {
             case GameState::WONDER_DRAFT_PHASE_1:
             case GameState::WONDER_DRAFT_PHASE_2:
-                std::cout << "pick <ID>, detail, info <ID>\n";
+                std::cout << "pick <ID>, detail <1/2>\n";
                 break;
             case GameState::WAITING_FOR_TOKEN_SELECTION_PAIR:
             case GameState::WAITING_FOR_TOKEN_SELECTION_LIB:
@@ -356,7 +349,7 @@ namespace SevenWondersDuel {
                 std::cout << "choose me, choose opponent\n";
                 break;
             default:
-                std::cout << "build/discard <CID>, wonder <CID> <WID>, info <ID>, pile, log\n";
+                std::cout << "build/discard <CID>, wonder <CID> <WID>, detail <1/2>, pile\n";
                 break;
         }
     }
@@ -382,6 +375,8 @@ namespace SevenWondersDuel {
             idx++;
         }
         printLine('-');
+        // [Update 1] 在奇迹轮抽阶段也显示日志，以便观察 AI 操作
+        renderActionLog(model.gameLog);
         renderErrorMessage();
         renderCommandHelp(model.currentPlayerIndex == 0 ? GameState::WONDER_DRAFT_PHASE_1 : GameState::WONDER_DRAFT_PHASE_1);
     }
@@ -407,7 +402,6 @@ namespace SevenWondersDuel {
         printLine('='); printCentered("\033[1;31mDESTROY OPPONENT CARD\033[0m"); printLine('=');
 
         int wCounter = 1;
-        // 仅显示对手的面板，并开启 Target Mode
         renderPlayerDashboard(*model.getOpponent(), false, *model.getCurrentPlayer(), wCounter, true);
 
         renderErrorMessage();
@@ -450,7 +444,6 @@ namespace SevenWondersDuel {
     // ==========================================================
 
     void GameView::renderGame(const GameModel& model, GameState state) {
-        // 重置上下文
         ctx.wonderIdMap.clear();
         ctx.cardIdMap.clear();
         ctx.tokenIdMap.clear();
@@ -492,8 +485,9 @@ namespace SevenWondersDuel {
         }
     }
 
-    void GameView::renderGameForAI(const GameModel& model) {
-        renderGame(model, GameState::AGE_PLAY_PHASE);
+    // [Updated] 支持传入 state
+    void GameView::renderGameForAI(const GameModel& model, GameState state) {
+        renderGame(model, state);
     }
 
     // ==========================================================
@@ -503,11 +497,18 @@ namespace SevenWondersDuel {
     void GameView::renderPlayerDetailFull(const Player& p, const Player& opp) {
         clearScreen();
         printLine('='); printCentered("DETAIL: " + p.name);
+
+        // [Update 3] 弃牌收益计算
+        int discardValue = 2 + p.getCardCount(CardType::COMMERCIAL);
+
         std::cout << " [1] BASIC: Coins " << p.coins << " | VP " << p.getScore(opp) << "\n";
+        std::cout << "     \033[33mDiscard Value: " << discardValue << " coins\033[0m\n"; // 新增显示
+
         std::cout << " [2] RESOURCES: " << formatResourcesCompact(p) << "\n";
-        std::cout << "     Costs (W/C/S/G/P): ";
+        std::cout << "     Buy Costs (W/C/S/G/P): ";
         std::vector<ResourceType> types = {ResourceType::WOOD, ResourceType::CLAY, ResourceType::STONE, ResourceType::GLASS, ResourceType::PAPER};
         for (auto t : types) std::cout << p.getTradingPrice(t, opp) << "$ ";
+
         std::cout << "\n [3] SCIENCE: ";
         for(auto [s, c] : p.scienceSymbols) { if(c>0 && s!=ScienceSymbol::NONE) std::cout << "[" << (int)s << "]x" << c << " "; }
         std::cout << "\n [4] WONDERS:\n";
@@ -522,7 +523,6 @@ namespace SevenWondersDuel {
         std::cout << "  Eff: "; for(auto& eff : c.effects) std::cout << eff->getDescription() << " ";
         std::cout << "\n";
 
-        // [Update 3] 显示连锁信息
         if (!c.chainTag.empty()) std::cout << "  Provides Chain: \033[97m" << c.chainTag << "\033[0m\n";
         if (!c.requiresChainTag.empty()) std::cout << "  Requires Chain: \033[97m" << c.requiresChainTag << "\033[0m\n";
 
@@ -577,7 +577,22 @@ namespace SevenWondersDuel {
             std::string arg1, arg2; ss >> arg1 >> arg2;
 
             if (cmd == "log") { renderFullLog(model.gameLog); continue; }
-            if (cmd == "detail") { renderPlayerDetailFull(*model.getCurrentPlayer(), *model.getOpponent()); continue; }
+
+            // [Update 2] detail <1/2>
+            if (cmd == "detail") {
+                int pIdx = -1;
+                if (arg1 == "1") pIdx = 0;
+                else if (arg1 == "2") pIdx = 1;
+
+                if (pIdx != -1) {
+                    renderPlayerDetailFull(*model.players[pIdx], *model.players[1-pIdx]);
+                } else {
+                    // Default behavior (show current)
+                    renderPlayerDetailFull(*model.getCurrentPlayer(), *model.getOpponent());
+                }
+                continue;
+            }
+
             if (cmd == "info") {
                 int cId = parseId(arg1, 'C'); int wId = parseId(arg1, 'W'); int sId = parseId(arg1, 'S'); int tId = parseId(arg1, 'T'); int dId = parseId(arg1, 'D');
 

@@ -49,7 +49,8 @@ int main() {
 
         // 渲染逻辑优化：AI 回合主动渲染以便观看，人类回合由 promptHumanAction 内部渲染
         if (!currentAgent->isHuman()) {
-            view.renderGameForAI(model);
+            // [Updated] 传入当前 state，确保 Draft 阶段渲染正确
+            view.renderGameForAI(model, game.getState());
         }
 
         // 获取决策
@@ -81,7 +82,7 @@ int main() {
     }
 
     // 5. 游戏结束
-    view.renderGameForAI(game.getModel()); // 最后一帧
+    view.renderGameForAI(game.getModel(), GameState::GAME_OVER); // 最后一帧
 
     std::cout << "\n=========================================\n";
     std::cout << "              GAME OVER                  \n";
