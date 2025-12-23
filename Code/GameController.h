@@ -16,21 +16,7 @@
 
 namespace SevenWondersDuel {
 
-    // 动作参数结构体
-    struct Action {
-        ActionType type;
-        std::string targetCardId;   // 选中的金字塔卡牌 / 弃牌堆卡牌 / 对手卡牌 / 先手选择 "ME" or "OPPONENT"
-        std::string targetWonderId; // 选中的手牌奇迹 (用于建造奇迹时)
-        ProgressToken selectedToken = ProgressToken::NONE;
-        ResourceType chosenResource = ResourceType::WOOD; // 用于极其罕见的多选一判定
-    };
-
-    // 动作结果反馈
-    struct ActionResult {
-        bool isValid;
-        int cost = 0;
-        std::string message;
-    };
+    class IGameStateLogic; // Forward declaration
 
     // 模型聚合根 (Model Layer Root)
     class GameModel {
@@ -128,7 +114,7 @@ namespace SevenWondersDuel {
     class GameController : public ILogger, public IGameActions {
     public:
         GameController();
-        ~GameController() = default;
+        ~GameController(); // Moved implementation to cpp
 
         // --- 初始化与流程 ---
 
@@ -156,8 +142,12 @@ namespace SevenWondersDuel {
         // --- ILogger & IGameActions Implementation ---
 
         void setPendingDestructionType(CardType t) override { pendingDestructionType = t; }
+        CardType getPendingDestructionType() const { return pendingDestructionType; } // Added getter
 
-        void setState(GameState newState) override { currentState = newState; }
+        void setState(GameState newState) override { 
+            currentState = newState;
+            updateStateLogic(newState);
+        }
         
         std::vector<int> moveMilitary(int shields, int playerId) override;
         bool isDiscardPileEmpty() const override;
@@ -170,6 +160,7 @@ namespace SevenWondersDuel {
 
     private:
         std::unique_ptr<GameModel> model;
+        std::unique_ptr<IGameStateLogic> m_stateLogic; // State Pattern
         GameState currentState = GameState::WONDER_DRAFT_PHASE_1;
 
         // 内部状态标记
@@ -179,6 +170,9 @@ namespace SevenWondersDuel {
         std::mt19937 rng; // 随机数生成器
 
         CardType pendingDestructionType = CardType::CIVILIAN; // 记录当前必须销毁的卡牌颜色
+
+        // Helper to switch state logic
+        void updateStateLogic(GameState newState);
 
         // --- 内部流程方法 ---
 

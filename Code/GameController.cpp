@@ -2,6 +2,7 @@
 #include "DataLoader.h"
 #include "RulesEngine.h"
 #include "ScoringManager.h"
+#include "GameStateLogic.h" // Include concrete states
 #include <algorithm>
 #include <iostream>
 #include <random>
@@ -14,6 +15,41 @@ namespace SevenWondersDuel {
         auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         rng.seed(seed);
         model = std::make_unique<GameModel>();
+        // Initialize default state
+        updateStateLogic(GameState::WONDER_DRAFT_PHASE_1);
+    }
+
+    GameController::~GameController() = default;
+
+    void GameController::updateStateLogic(GameState newState) {
+        switch (newState) {
+            case GameState::WONDER_DRAFT_PHASE_1:
+            case GameState::WONDER_DRAFT_PHASE_2:
+                m_stateLogic = std::make_unique<WonderDraftState>();
+                break;
+            case GameState::AGE_PLAY_PHASE:
+                m_stateLogic = std::make_unique<AgePlayState>();
+                break;
+            case GameState::WAITING_FOR_TOKEN_SELECTION_PAIR:
+            case GameState::WAITING_FOR_TOKEN_SELECTION_LIB:
+                m_stateLogic = std::make_unique<TokenSelectionState>();
+                break;
+            case GameState::WAITING_FOR_DESTRUCTION:
+                m_stateLogic = std::make_unique<DestructionState>();
+                break;
+            case GameState::WAITING_FOR_DISCARD_BUILD:
+                m_stateLogic = std::make_unique<DiscardBuildState>();
+                break;
+            case GameState::WAITING_FOR_START_PLAYER_SELECTION:
+                m_stateLogic = std::make_unique<StartPlayerSelectionState>();
+                break;
+            case GameState::GAME_OVER:
+                m_stateLogic = std::make_unique<GameOverState>();
+                break;
+        }
+        if (m_stateLogic) {
+            m_stateLogic->onEnter(*this);
+        }
     }
 
     void GameController::loadData(const std::string& path) {
@@ -65,7 +101,7 @@ namespace SevenWondersDuel {
     }
 
     void GameController::startGame() {
-        currentState = GameState::WONDER_DRAFT_PHASE_1;
+        setState(GameState::WONDER_DRAFT_PHASE_1);
         draftTurnCount = 0;
         initWondersDeck();
         dealWondersToDraft();
@@ -102,14 +138,14 @@ namespace SevenWondersDuel {
         model->setCurrentAge(age);
         std::vector<Card*> deck = prepareDeckForAge(age);
         model->getBoardMut()->initPyramid(age, deck);
-        currentState = GameState::AGE_PLAY_PHASE;
+        setState(GameState::AGE_PLAY_PHASE);
         model->addLog("[System] Age " + std::to_string(age) + " Begins!");
     }
 
     void GameController::prepareNextAge() {
         // 检查是否结束 Age 3 -> 文官胜利
         if (model->getCurrentAge() == 3) {
-            currentState = GameState::GAME_OVER;
+            setState(GameState::GAME_OVER);
             model->setVictoryType(VictoryType::CIVILIAN);
 
             // 计算分数判定胜负
@@ -146,7 +182,7 @@ namespace SevenWondersDuel {
         else decisionMaker = model->getCurrentPlayerIndex(); // 刚刚行动完的玩家
 
         model->setCurrentPlayerIndex(decisionMaker);
-        currentState = GameState::WAITING_FOR_START_PLAYER_SELECTION;
+        setState(GameState::WAITING_FOR_START_PLAYER_SELECTION);
 
         model->addLog("[System] End of Age " + std::to_string(model->getCurrentAge()) +
                       ". " + model->getCurrentPlayer()->getName() + " chooses who starts next age.");
@@ -232,7 +268,7 @@ namespace SevenWondersDuel {
 
             if (model->getDraftPool().empty()) {
                 if (currentState == GameState::WONDER_DRAFT_PHASE_1) {
-                    currentState = GameState::WONDER_DRAFT_PHASE_2;
+                    setState(GameState::WONDER_DRAFT_PHASE_2);
                     dealWondersToDraft();
                     draftTurnCount = 0;
                     model->setCurrentPlayerIndex(1);
@@ -364,7 +400,7 @@ namespace SevenWondersDuel {
                 model->addLog("[Effect] Urbanism: +6 coins immediately.");
             }
 
-            currentState = GameState::AGE_PLAY_PHASE;
+            setState(GameState::AGE_PLAY_PHASE);
 
             if (token == ProgressToken::LAW) {
                 if (checkForNewSciencePairs(currPlayer)) {
@@ -397,7 +433,7 @@ namespace SevenWondersDuel {
              model->addLog("[System] " + opponent->getName() + "'s card " + target->getName() + " destroyed.");
         }
 
-        currentState = GameState::AGE_PLAY_PHASE;
+        setState(GameState::AGE_PLAY_PHASE);
         onTurnEnd();
     }
 
@@ -437,149 +473,17 @@ namespace SevenWondersDuel {
             }
         }
 
-        currentState = GameState::AGE_PLAY_PHASE;
+        setState(GameState::AGE_PLAY_PHASE);
         onTurnEnd();
     }
 
     // --- 校验 ---
 
     ActionResult GameController::validateAction(const Action& action) {
-        ActionResult result;
-        result.isValid = false;
-
-        const Player* currPlayer = model->getCurrentPlayer();
-        const Player* opponent = model->getOpponent();
-
-        if (currentState == GameState::WONDER_DRAFT_PHASE_1 ||
-            currentState == GameState::WONDER_DRAFT_PHASE_2) {
-            if (action.type == ActionType::DRAFT_WONDER) {
-                bool found = false;
-                for(auto w : model->getDraftPool()) if(w->getId() == action.targetWonderId) found = true;
-                if(found) { result.isValid = true; return result; }
-                result.message = "Wonder not available in draft pool";
-                return result;
-            }
-            result.message = "Invalid action for Draft Phase";
-            return result;
+        if (m_stateLogic) {
+            return m_stateLogic->validate(action, *this);
         }
-
-        if (currentState == GameState::WAITING_FOR_TOKEN_SELECTION_PAIR ||
-            currentState == GameState::WAITING_FOR_TOKEN_SELECTION_LIB) {
-            if (action.type == ActionType::SELECT_PROGRESS_TOKEN) {
-                result.isValid = true; return result;
-            }
-            result.message = "Must select a Progress Token";
-            return result;
-        }
-
-        if (currentState == GameState::WAITING_FOR_DESTRUCTION) {
-            if (action.type == ActionType::SELECT_DESTRUCTION) {
-                if (action.targetCardId.empty()) {
-                    result.isValid = true;
-                    return result;
-                }
-
-                const Player* opponent = model->getOpponent();
-                bool hasCard = false;
-                Card* targetCard = nullptr;
-                for (auto c : opponent->getBuiltCards()) {
-                    if (c->getId() == action.targetCardId) {
-                        hasCard = true;
-                        targetCard = c;
-                        break;
-                    }
-                }
-
-                if (!hasCard || !targetCard) {
-                    result.message = "Opponent does not possess this card";
-                    return result;
-                }
-
-                if (targetCard->getType() != pendingDestructionType) {
-                    result.message = "Invalid card color. Must destroy a specific type.";
-                    return result;
-                }
-
-                result.isValid = true;
-                return result;
-            }
-            result.message = "Must select a card to destroy (or empty to skip)";
-            return result;
-        }
-
-        if (currentState == GameState::WAITING_FOR_DISCARD_BUILD) {
-             if (action.type == ActionType::SELECT_FROM_DISCARD) {
-                 auto& pile = model->getBoard()->getDiscardPile();
-                 auto it = std::find_if(pile.begin(), pile.end(), [&](Card* c){ return c->getId() == action.targetCardId; });
-                 if (it != pile.end()) {
-                     result.isValid = true;
-                     return result;
-                 }
-                 result.message = "Card not found in discard pile";
-                 return result;
-             }
-             result.message = "Must select a card from discard pile";
-             return result;
-             }
-
-        if (currentState == GameState::WAITING_FOR_START_PLAYER_SELECTION) {
-            if (action.type == ActionType::CHOOSE_STARTING_PLAYER) {
-                if (action.targetCardId == "ME" || action.targetCardId == "OPPONENT") {
-                    result.isValid = true; return result;
-                }
-                result.message = "Target must be ME or OPPONENT";
-                return result;
-            }
-            result.message = "Must choose starting player";
-            return result;
-        }
-
-        if (currentState == GameState::AGE_PLAY_PHASE) {
-            Card* target = findCardInPyramid(action.targetCardId);
-            if (!target) { result.message = "Card not found"; return result; }
-
-            bool isAvailable = false;
-            auto availableSlots = model->getBoard()->getCardStructure().getAvailableCards();
-            for(auto slot : availableSlots) if(slot->getCardPtr() == target) isAvailable = true;
-            if (!isAvailable) { result.message = "Card is currently covered"; return result; }
-
-            if (action.type == ActionType::BUILD_CARD) {
-                // [UPDATED] 传入 target->type
-                auto costInfo = currPlayer->calculateCost(target->getCost(), *opponent, target->getType());
-
-                // 检查连锁
-                if (!target->getRequiresChainTag().empty() &&
-                    currPlayer->getOwnedChainTags().count(target->getRequiresChainTag())) {
-                    costInfo.first = true; costInfo.second = 0;
-                }
-
-                if (!costInfo.first) { result.message = "Insufficient resources/coins"; return result; }
-
-                result.isValid = true;
-                result.cost = costInfo.second;
-                return result;
-            }
-            else if (action.type == ActionType::DISCARD_FOR_COINS) {
-                result.isValid = true;
-                return result;
-            }
-            else if (action.type == ActionType::BUILD_WONDER) {
-                Wonder* w = findWonderInHand(currPlayer, action.targetWonderId);
-                if (!w) { result.message = "Wonder not found in hand"; return result; }
-                if (w->isBuilt()) { result.message = "Wonder already built"; return result; }
-
-                // [UPDATED] 传入 CardType::WONDER
-                auto costInfo = currPlayer->calculateCost(w->getCost(), *opponent, CardType::WONDER);
-                if (!costInfo.first) { result.message = "Insufficient resources for Wonder"; return result; }
-
-                result.isValid = true;
-                result.cost = costInfo.second;
-                return result;
-            }
-        }
-
-        result.message = "Unknown action or state";
-        return result;
+        return {false, 0, "State Logic not initialized"};
     }
 
     bool GameController::processAction(const Action& action) {
@@ -635,7 +539,7 @@ namespace SevenWondersDuel {
     void GameController::checkVictoryConditions() {
          VictoryResult result = RulesEngine::checkInstantVictory(*model->getPlayers()[0], *model->getPlayers()[1], *model->getBoard());
         if (result.isGameOver) {
-            currentState = GameState::GAME_OVER;
+            setState(GameState::GAME_OVER);
             model->setWinnerIndex(result.winnerIndex);
             model->setVictoryType(result.type);
         }

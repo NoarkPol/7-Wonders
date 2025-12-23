@@ -91,6 +91,23 @@ namespace SevenWondersDuel {
         PHILOSOPHY     // 哲学
     };
 
+    // 动作参数结构体
+    struct Action {
+        ActionType type;
+        std::string targetCardId;   // 选中的金字塔卡牌 / 弃牌堆卡牌 / 对手卡牌 / 先手选择 "ME" or "OPPONENT"
+        std::string targetWonderId; // 选中的手牌奇迹 (用于建造奇迹时)
+        ProgressToken selectedToken = ProgressToken::NONE;
+        ResourceType chosenResource = ResourceType::WOOD; // 用于极其罕见的多选一判定
+    };
+
+    // 动作结果反馈
+    struct ActionResult {
+        bool isValid;
+        int cost = 0;
+        std::string message;
+    };
+
+
     enum class VictoryType { NONE, MILITARY, SCIENCE, CIVILIAN };
 
     // 辅助工具：将字符串转换为枚举
