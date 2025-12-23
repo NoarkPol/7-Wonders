@@ -53,16 +53,7 @@ namespace SevenWondersDuel {
         const Player* opponent = model.getOpponent();
 
         // 1. Find Card in Pyramid
-        // Since findCardInPyramid is private, we iterate manually using public API
-        // or we could assume GameController exposes a helper.
-        // Let's use public API: getAllCards
-        const Card* target = nullptr;
-        for(const auto& c : model.getAllCards()) {
-            if (c.getId() == action.targetCardId) {
-                target = &c;
-                break;
-            }
-        }
+        const Card* target = model.findCardById(action.targetCardId);
         
         if (!target) { result.message = "Card not found"; return result; }
 

@@ -110,6 +110,41 @@ namespace SevenWondersDuel {
 
     enum class VictoryType { NONE, MILITARY, SCIENCE, CIVILIAN };
 
+    // 全局常量配置
+    namespace Config {
+        static constexpr int INITIAL_COINS = 7;
+        static constexpr int COINS_PER_VP = 3;
+        static constexpr int BASE_DISCARD_GAIN = 2;
+        
+        static constexpr int MASONRY_DISCOUNT = 2;
+        static constexpr int ARCHITECTURE_DISCOUNT = 2;
+        
+        static constexpr int URBANISM_CHAIN_BONUS = 4;
+        static constexpr int URBANISM_TOKEN_BONUS = 6;
+        
+        static constexpr int AGRICULTURE_VP = 4;
+        static constexpr int PHILOSOPHY_VP = 7;
+        static constexpr int MATHEMATICS_VP_PER_TOKEN = 3;
+
+        // 军事轨道常量
+        static constexpr int MILITARY_THRESHOLD_LOOT_1 = 3;
+        static constexpr int MILITARY_THRESHOLD_LOOT_2 = 6;
+        static constexpr int MILITARY_THRESHOLD_WIN = 9;
+        static constexpr int MILITARY_LOOT_VALUE_1 = 2;
+        static constexpr int MILITARY_LOOT_VALUE_2 = 5;
+        static constexpr int MILITARY_VP_LEVEL_1 = 2;
+        static constexpr int MILITARY_VP_LEVEL_2 = 5;
+        static constexpr int MILITARY_VP_WIN = 10;
+
+        // 科技常量
+        static constexpr int SCIENCE_WIN_THRESHOLD = 6;
+        static constexpr int SCIENCE_PAIR_COUNT = 2;
+
+        // 交易与建设
+        static constexpr int TRADING_BASE_COST = 2;
+        static constexpr int MAX_TOTAL_WONDERS = 7;
+    }
+
     // 辅助工具：将字符串转换为枚举
     inline ResourceType strToResource(const std::string& s) {
         if(s == "WOOD") return ResourceType::WOOD;

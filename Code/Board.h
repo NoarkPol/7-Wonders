@@ -42,30 +42,28 @@ namespace SevenWondersDuel {
             m_position += (shields * direction);
 
             // 钳制范围
-            if (m_position > 9) m_position = 9;
-            if (m_position < -9) m_position = -9;
+            if (m_position > Config::MILITARY_THRESHOLD_WIN) m_position = Config::MILITARY_THRESHOLD_WIN;
+            if (m_position < -Config::MILITARY_THRESHOLD_WIN) m_position = -Config::MILITARY_THRESHOLD_WIN;
 
             // 检查掠夺 (跨越阈值)
-            // 阈值：3 (2元), 6 (5元)
-
             // P1 (右侧玩家) 被攻击 (Position > 0)
-            if (startPos < 3 && m_position >= 3 && m_lootTokens[2]) {
+            if (startPos < Config::MILITARY_THRESHOLD_LOOT_1 && m_position >= Config::MILITARY_THRESHOLD_LOOT_1 && m_lootTokens[2]) {
                 m_lootTokens[2] = false;
-                lootEvents.push_back(2);
+                lootEvents.push_back(Config::MILITARY_LOOT_VALUE_1);
             }
-            if (startPos < 6 && m_position >= 6 && m_lootTokens[3]) {
+            if (startPos < Config::MILITARY_THRESHOLD_LOOT_2 && m_position >= Config::MILITARY_THRESHOLD_LOOT_2 && m_lootTokens[3]) {
                 m_lootTokens[3] = false;
-                lootEvents.push_back(5);
+                lootEvents.push_back(Config::MILITARY_LOOT_VALUE_2);
             }
 
             // P0 (左侧玩家) 被攻击 (Position < 0)
-            if (startPos > -3 && m_position <= -3 && m_lootTokens[0]) {
+            if (startPos > -Config::MILITARY_THRESHOLD_LOOT_1 && m_position <= -Config::MILITARY_THRESHOLD_LOOT_1 && m_lootTokens[0]) {
                 m_lootTokens[0] = false;
-                lootEvents.push_back(-2);
+                lootEvents.push_back(-Config::MILITARY_LOOT_VALUE_1);
             }
-            if (startPos > -6 && m_position <= -6 && m_lootTokens[1]) {
+            if (startPos > -Config::MILITARY_THRESHOLD_LOOT_2 && m_position <= -Config::MILITARY_THRESHOLD_LOOT_2 && m_lootTokens[1]) {
                 m_lootTokens[1] = false;
-                lootEvents.push_back(-5);
+                lootEvents.push_back(-Config::MILITARY_LOOT_VALUE_2);
             }
 
             return lootEvents;
@@ -74,10 +72,10 @@ namespace SevenWondersDuel {
         int getVictoryPoints(int playerId) const {
             int absPos = std::abs(m_position);
             int points = 0;
-            if (absPos >= 1 && absPos < 3) points = 0;
-            else if (absPos >= 3 && absPos < 6) points = 2;
-            else if (absPos >= 6 && absPos < 9) points = 5;
-            else if (absPos >= 9) points = 10;
+            if (absPos >= 1 && absPos < Config::MILITARY_THRESHOLD_LOOT_1) points = 0;
+            else if (absPos >= Config::MILITARY_THRESHOLD_LOOT_1 && absPos < Config::MILITARY_THRESHOLD_LOOT_2) points = Config::MILITARY_VP_LEVEL_1;
+            else if (absPos >= Config::MILITARY_THRESHOLD_LOOT_2 && absPos < Config::MILITARY_THRESHOLD_WIN) points = Config::MILITARY_VP_LEVEL_2;
+            else if (absPos >= Config::MILITARY_THRESHOLD_WIN) points = Config::MILITARY_VP_WIN;
 
             if (m_position > 0 && playerId == 0) return points;
             if (m_position < 0 && playerId == 1) return points;

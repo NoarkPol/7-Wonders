@@ -19,13 +19,13 @@ namespace SevenWondersDuel {
         score += board.getMilitaryTrack().getVictoryPoints(player.getId());
 
         // 4. Coins (3 coins = 1 VP)
-        score += player.getCoins() / 3;
+        score += player.getCoins() / Config::COINS_PER_VP;
 
         // 5. Progress Tokens
         for (auto token : player.getProgressTokens()) {
-            if (token == ProgressToken::AGRICULTURE) score += 4;
-            if (token == ProgressToken::MATHEMATICS) score += 3 * player.getProgressTokens().size(); 
-            if (token == ProgressToken::PHILOSOPHY) score += 7;
+            if (token == ProgressToken::AGRICULTURE) score += Config::AGRICULTURE_VP;
+            if (token == ProgressToken::MATHEMATICS) score += Config::MATHEMATICS_VP_PER_TOKEN * player.getProgressTokens().size(); 
+            if (token == ProgressToken::PHILOSOPHY) score += Config::PHILOSOPHY_VP;
         }
 
         return score;

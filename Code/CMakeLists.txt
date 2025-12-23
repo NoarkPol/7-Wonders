@@ -13,6 +13,7 @@ add_executable(7-Wonders main.cpp
         Player.cpp
         EffectSystem.cpp
         GameController.cpp
+        GameCommands.cpp
         GameStateLogic.cpp
         GameStateLogic.h
         DataLoader.cpp

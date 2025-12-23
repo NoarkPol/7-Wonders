@@ -496,7 +496,7 @@ namespace SevenWondersDuel {
         clearScreen();
         printLine('='); printCentered("DETAIL: " + p.getName());
 
-        int discardValue = 2 + p.getCardCount(CardType::COMMERCIAL);
+        int discardValue = Config::BASE_DISCARD_GAIN + p.getCardCount(CardType::COMMERCIAL);
 
         std::cout << " [1] BASIC: Coins " << p.getCoins() << " | VP " << ScoringManager::calculateScore(p, opp, board) << "\n";
         std::cout << "     \033[33mDiscard Value: " << discardValue << " coins\033[0m\n";

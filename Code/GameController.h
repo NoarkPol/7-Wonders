@@ -90,10 +90,37 @@ namespace SevenWondersDuel {
         void popRemainingWonder() { if (!remainingWonders.empty()) remainingWonders.pop_back(); }
         Wonder* backRemainingWonder() { return remainingWonders.empty() ? nullptr : remainingWonders.back(); }
 
-        void clearAllCards() { allCards.clear(); }
-        void clearAllWonders() { allWonders.clear(); }
-        std::vector<Card>& getAllCardsMut() { return allCards; }
-        std::vector<Wonder>& getAllWondersMut() { return allWonders; }
+        // Atomic Data Operations
+        void populateData(std::vector<Card> cards, std::vector<Wonder> wonders) {
+            allCards = std::move(cards);
+            allWonders = std::move(wonders);
+        }
+
+        Card* findCardById(const std::string& id) {
+            for(auto& c : allCards) if(c.getId() == id) return &c;
+            return nullptr;
+        }
+
+        const Card* findCardById(const std::string& id) const {
+            for(const auto& c : allCards) if(c.getId() == id) return &c;
+            return nullptr;
+        }
+
+        Wonder* findWonderById(const std::string& id) {
+            for(auto& w : allWonders) if(w.getId() == id) return &w;
+            return nullptr;
+        }
+
+        const Wonder* findWonderById(const std::string& id) const {
+            for(const auto& w : allWonders) if(w.getId() == id) return &w;
+            return nullptr;
+        }
+
+        std::vector<Wonder*> getPointersToAllWonders() {
+            std::vector<Wonder*> res;
+            for(auto& w : allWonders) res.push_back(&w);
+            return res;
+        }
 
         void addLog(const std::string& msg) {
             gameLog.push_back(msg);
@@ -112,6 +139,16 @@ namespace SevenWondersDuel {
 
     // 游戏控制器
     class GameController : public ILogger, public IGameActions {
+        // Friend concrete commands to allow access to private logic
+        friend class DraftWonderCommand;
+        friend class BuildCardCommand;
+        friend class DiscardCardCommand;
+        friend class BuildWonderCommand;
+        friend class SelectProgressTokenCommand;
+        friend class DestructionCommand;
+        friend class SelectFromDiscardCommand;
+        friend class ChooseStartingPlayerCommand;
+
     public:
         GameController();
         ~GameController(); // Moved implementation to cpp
@@ -198,16 +235,6 @@ namespace SevenWondersDuel {
 
         // 检测是否有新凑成的科技对
         bool checkForNewSciencePairs(Player* p);
-
-        // 具体的动作处理器
-        void handleDraftWonder(const Action& action);
-        void handleBuildCard(const Action& action);
-        void handleDiscardCard(const Action& action);
-        void handleBuildWonder(const Action& action);
-        void handleSelectProgressToken(const Action& action);
-        void handleDestruction(const Action& action);
-        void handleChooseStartingPlayer(const Action& action); // 新增：处理先手选择
-        void handleSelectFromDiscard(const Action& action); // [NEW] 处理弃牌堆选牌
 
         // 辅助：从ID查找对象
         Card* findCardInPyramid(const std::string& id);

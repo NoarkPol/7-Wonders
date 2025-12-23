@@ -52,17 +52,20 @@ namespace SevenWondersDuel {
 
                 bool found = false;
                 if (!found && cId!=-1 && m_ctx.cardIdMap.count(cId)) {
-                    for(const auto& c : model.getAllCards()) if(c.getId() == m_ctx.cardIdMap[cId]) { view.renderCardDetail(c); found=true; break; }
+                    const Card* c = model.findCardById(m_ctx.cardIdMap[cId]);
+                    if (c) { view.renderCardDetail(*c); found = true; }
                 }
                 if (!found && wId!=-1 && m_ctx.wonderIdMap.count(wId)) {
-                    for(const auto& w : model.getAllWonders()) if(w.getId() == m_ctx.wonderIdMap[wId]) { view.renderWonderDetail(w); found=true; break; }
+                    const Wonder* w = model.findWonderById(m_ctx.wonderIdMap[wId]);
+                    if (w) { view.renderWonderDetail(*w); found = true; }
                 }
                 if (!found && sId!=-1) {
                     if (m_ctx.tokenIdMap.count(sId)) { view.renderTokenDetail(m_ctx.tokenIdMap[sId]); found=true; }
                     else if (m_ctx.boxTokenIdMap.count(sId)) { view.renderTokenDetail(m_ctx.boxTokenIdMap[sId]); found=true; }
                 }
                 if (!found && tId!=-1 && m_ctx.oppCardIdMap.count(tId)) {
-                    for(const auto& c : model.getAllCards()) if(c.getId() == m_ctx.oppCardIdMap[tId]) { view.renderCardDetail(c); found=true; break; }
+                    const Card* c = model.findCardById(m_ctx.oppCardIdMap[tId]);
+                    if (c) { view.renderCardDetail(*c); found = true; }
                 }
 
                 if (!found) setLastError("ID not found or not visible in current context.");

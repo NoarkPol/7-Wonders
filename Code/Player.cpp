@@ -12,7 +12,7 @@
 namespace SevenWondersDuel {
 
     // 构造函数
-    Player::Player(int pid, std::string pname) : m_id(pid), m_name(pname), m_coins(7) {
+    Player::Player(int pid, std::string pname) : m_id(pid), m_name(pname), m_coins(Config::INITIAL_COINS) {
         // 初始化资源 map
         m_fixedResources[ResourceType::WOOD] = 0;
         m_fixedResources[ResourceType::STONE] = 0;
@@ -98,7 +98,7 @@ namespace SevenWondersDuel {
         if (opponent.m_publicProduction.count(type)) {
             opponentProduction = opponent.m_publicProduction.at(type);
         }
-        return 2 + opponentProduction;
+        return Config::TRADING_BASE_COST + opponentProduction;
     }
 
     std::pair<bool, int> Player::calculateCost(const ResourceCost& cost, const Player& opponent, CardType targetType) const {
@@ -130,9 +130,9 @@ namespace SevenWondersDuel {
         // --- [NEW] 科技标记减费逻辑 ---
         int discountCount = 0;
         if (m_progressTokens.count(ProgressToken::MASONRY) && targetType == CardType::CIVILIAN) {
-            discountCount = 2;
+            discountCount = Config::MASONRY_DISCOUNT;
         } else if (m_progressTokens.count(ProgressToken::ARCHITECTURE) && targetType == CardType::WONDER) {
-            discountCount = 2;
+            discountCount = Config::ARCHITECTURE_DISCOUNT;
         }
 
         // 智能减免：优先减免那些"如果不减免就很贵"的资源

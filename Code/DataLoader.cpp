@@ -62,7 +62,7 @@ namespace SevenWondersDuel {
             c.setAge(v["age"].asInt());
             c.setType(strToCardType(v["type"].asString()));
             c.setCost(parseCost(v["cost"]));
-            c.setChainTag(v["provided_chain"].asString());
+            c.setChainTag(v["provides_chain"].asString());
             c.setRequiresChainTag(v["requires_chain"].asString());
 
             // 解析卡牌效果 (Source = Card, True)
