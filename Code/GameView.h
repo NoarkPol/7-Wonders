@@ -7,6 +7,7 @@
 
 #include "Global.h"
 #include "GameController.h"
+#include "RenderContext.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -21,45 +22,29 @@ namespace SevenWondersDuel {
 		void clearScreen();
 		void renderMainMenu();
 
-        void setLastError(const std::string& msg);
-        void clearLastError();
 		void printMessage(const std::string& msg);
 
-		// 获取用户输入 (核心交互循环)
-		Action promptHumanAction(const GameModel& model, GameState state);
-
-        // [Updated] 暴露渲染接口供 AI 回合使用，增加 state 参数
+        // [Updated] 暴露渲染接口供使用，增加 ctx 和 lastError 参数
+        void renderGame(const GameModel& model, GameState state, RenderContext& ctx, const std::string& lastError);
         void renderGameForAI(const GameModel& model, GameState state);
 
+        // 详情页 (Public because InputManager needs them)
+		void renderPlayerDetailFull(const Player& p, const Player& opp, const Board& board);
+		void renderCardDetail(const Card& c);
+		void renderWonderDetail(const Wonder& w);
+		void renderTokenDetail(ProgressToken t);
+        void renderDiscardPile(const std::vector<Card*>& pile);
+        void renderFullLog(const std::vector<std::string>& log);
+
 	private:
-        // --- 内部状态 ---
-        std::string m_lastError;
-
-        // 渲染上下文：用于将显示的短ID (1, 2...) 映射回字符串 ID
-        struct RenderContext {
-            std::map<int, std::string> cardIdMap;     // 金字塔卡牌
-            std::map<int, std::string> wonderIdMap;   // 奇迹
-            std::map<int, ProgressToken> tokenIdMap;  // 桌面科技标记
-
-            // 新增：特殊状态所需的映射
-            std::map<int, std::string> oppCardIdMap;  // 对手已建成卡牌 (用于摧毁)
-            std::map<int, std::string> discardIdMap;  // 弃牌堆卡牌 (用于陵墓)
-            std::map<int, ProgressToken> boxTokenIdMap; // 盒子里的标记 (用于图书馆)
-
-            std::vector<std::string> draftWonderIds;  // 轮抽
-        } ctx;
-
 		// --- 渲染组件 ---
 
-        // 主渲染入口
-		void renderGame(const GameModel& model, GameState state);
-
         // 分阶段/状态渲染
-        void renderDraftPhase(const GameModel& model);
-        void renderTokenSelection(const GameModel& model, bool fromBox);
-        void renderDestructionPhase(const GameModel& model);
-        void renderDiscardBuildPhase(const GameModel& model);
-        void renderStartPlayerSelect(const GameModel& model);
+        void renderDraftPhase(const GameModel& model, RenderContext& ctx, const std::string& lastError);
+        void renderTokenSelection(const GameModel& model, bool fromBox, RenderContext& ctx, const std::string& lastError);
+        void renderDestructionPhase(const GameModel& model, RenderContext& ctx, const std::string& lastError);
+        void renderDiscardBuildPhase(const GameModel& model, RenderContext& ctx, const std::string& lastError);
+        void renderStartPlayerSelect(const GameModel& model, const std::string& lastError);
 
         // 基础绘图
 		void printLine(char c = '-', int width = 80);
@@ -77,26 +62,15 @@ namespace SevenWondersDuel {
         // 模块渲染
 		void renderHeader(const GameModel& model);
 		void renderMilitaryTrack(const Board& board);
-        void renderProgressTokens(const std::vector<ProgressToken>& tokens, bool isBoxContext = false);
+        void renderProgressTokens(const std::vector<ProgressToken>& tokens, RenderContext& ctx, bool isBoxContext = false);
 
         // Dashboard
-		void renderPlayerDashboard(const Player& p, bool isCurrent, const Player& opp, int& wonderCounter, const Board& board, bool targetMode = false);
+		void renderPlayerDashboard(const Player& p, bool isCurrent, const Player& opp, int& wonderCounter, const Board& board, RenderContext& ctx, bool targetMode = false);
 
-        void renderPyramid(const GameModel& model);
+        void renderPyramid(const GameModel& model, RenderContext& ctx);
         void renderActionLog(const std::vector<std::string>& log);
         void renderCommandHelp(GameState state);
-        void renderErrorMessage();
-
-        // 详情页
-		void renderPlayerDetailFull(const Player& p, const Player& opp, const Board& board);
-		void renderCardDetail(const Card& c);
-		void renderWonderDetail(const Wonder& w);
-		void renderTokenDetail(ProgressToken t);
-        void renderDiscardPile(const std::vector<Card*>& pile);
-        void renderFullLog(const std::vector<std::string>& log);
-
-        // 解析辅助
-        int parseId(const std::string& input, char prefix);
+        void renderErrorMessage(const std::string& lastError);
 	};
 
 }

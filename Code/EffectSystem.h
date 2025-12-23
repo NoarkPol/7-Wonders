@@ -11,6 +11,8 @@
 #include <string>
 #include <memory>
 
+namespace TinyJson { struct Value; }
+
 namespace SevenWondersDuel {
 
     // 前向声明，避免循环引用
@@ -207,6 +209,11 @@ namespace SevenWondersDuel {
         void apply(Player* self, Player* opponent, IEffectContext* ctx) override;
         int calculateScore(const Player* self, const Player* opponent) const override;
         std::string getDescription() const override;
+    };
+
+    class EffectFactory {
+    public:
+        static std::vector<std::shared_ptr<IEffect>> createEffects(const TinyJson::Value& vList, CardType sourceType, bool isFromCard);
     };
 
 }

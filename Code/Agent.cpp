@@ -1,6 +1,7 @@
 #include "Agent.h"
 #include "GameController.h"
 #include "GameView.h"
+#include "InputManager.h"
 #include <iostream>
 #include <random>
 #include <algorithm>
@@ -20,15 +21,15 @@ namespace SevenWondersDuel {
     //  Human Agent
     // ==========================================================
 
-    Action HumanAgent::decideAction(GameController& game, GameView& view) {
-        return view.promptHumanAction(game.getModel(), game.getState());
+    Action HumanAgent::decideAction(GameController& game, GameView& view, InputManager& input) {
+        return input.promptHumanAction(view, game.getModel(), game.getState());
     }
 
     // ==========================================================
     //  Random AI Agent (Robust & Validated)
     // ==========================================================
 
-    Action RandomAIAgent::decideAction(GameController& game, GameView& view) {
+    Action RandomAIAgent::decideAction(GameController& game, GameView& view, InputManager& input) {
         // 1. 提示 AI 正在思考
         std::cout << "\033[1;35m[AI] 正在思考...\033[0m" << std::endl;
 
