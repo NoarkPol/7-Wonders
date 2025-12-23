@@ -45,44 +45,6 @@ namespace SevenWondersDuel {
         return count;
     }
 
-    int Player::getScore(const Player& opponent) const {
-        int score = 0;
-
-        // 1. 卡牌分 + 效果分 (包含行会)
-        for (const auto& card : m_builtCards) {
-            score += card->getVictoryPoints(this, &opponent);
-        }
-
-        // 2. 奇迹分
-        for (const auto& wonder : m_builtWonders) {
-            score += wonder->getVictoryPoints(this, &opponent);
-        }
-
-        // 3. 军事分 (在 Board 中计算，此处不加)
-
-        // 4. 金币分 (3块钱1分)
-        score += m_coins / 3;
-
-        // 5. 发展标记分
-        for (auto token : m_progressTokens) {
-            if (token == ProgressToken::AGRICULTURE) score += 4;
-            if (token == ProgressToken::MATHEMATICS) score += 3 * m_progressTokens.size(); // 数学：每个标记3分
-            if (token == ProgressToken::PHILOSOPHY) score += 7;
-        }
-
-        return score;
-    }
-
-    int Player::getBlueCardScore(const Player& opponent) const {
-        int score = 0;
-        for (const auto& card : m_builtCards) {
-            if (card->getType() == CardType::CIVILIAN) {
-                score += card->getVictoryPoints(this, &opponent);
-            }
-        }
-        return score;
-    }
-
     // --- 辅助：递归求解最小交易成本 ---
     void solveMinCost(std::map<ResourceType, int> needed,
                       size_t choiceIdx,

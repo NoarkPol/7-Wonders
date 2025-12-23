@@ -74,12 +74,6 @@ namespace SevenWondersDuel {
         // 获取某类卡牌的数量 (用于行会卡计分)
         int getCardCount(CardType type) const;
 
-        // 计算当前总分 (胜利点数)
-        int getScore(const Player& opponent) const;
-
-        // 获取仅来自蓝色卡牌的分数 (用于平局判定)
-        int getBlueCardScore(const Player& opponent) const;
-
         // --- 资源与购买逻辑 ---
 
         // 向银行购买资源的单价

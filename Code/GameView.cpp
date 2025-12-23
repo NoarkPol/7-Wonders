@@ -1,4 +1,5 @@
 #include "GameView.h"
+#include "ScoringManager.h"
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -220,11 +221,11 @@ namespace SevenWondersDuel {
         printLine('-');
     }
 
-    void GameView::renderPlayerDashboard(const Player& p, bool isCurrent, const Player& opp, int& wonderCounter, bool targetMode) {
+    void GameView::renderPlayerDashboard(const Player& p, bool isCurrent, const Player& opp, int& wonderCounter, const Board& board, bool targetMode) {
         std::string nameTag = isCurrent ? ("\033[1;36m[" + p.getName() + "]\033[0m") : ("[" + p.getName() + "]");
         if (targetMode) nameTag = "\033[1;31m[TARGET: " + p.getName() + "]\033[0m";
 
-        int displayVP = p.getScore(opp) - (p.getCoins()/3);
+        int displayVP = ScoringManager::calculateScore(p, opp, board) - (p.getCoins()/3);
 
         std::cout << nameTag
                   << " Coin:\033[33m" << p.getCoins() << "\033[0m"
@@ -422,7 +423,7 @@ namespace SevenWondersDuel {
         printLine('='); printCentered("\033[1;31mDESTROY OPPONENT CARD\033[0m"); printLine('=');
 
         int wCounter = 1;
-        renderPlayerDashboard(*model.getOpponent(), false, *model.getCurrentPlayer(), wCounter, true);
+        renderPlayerDashboard(*model.getOpponent(), false, *model.getCurrentPlayer(), wCounter, *model.getBoard(), true);
 
         renderErrorMessage();
         renderCommandHelp(GameState::WAITING_FOR_DESTRUCTION);
@@ -497,9 +498,9 @@ namespace SevenWondersDuel {
             default: // AGE_PLAY_PHASE or GAME_OVER
                 clearScreen();
                 renderHeader(model);
-                renderPlayerDashboard(*model.getPlayers()[0], model.getCurrentPlayerIndex() == 0, *model.getPlayers()[1], wonderCounter);
+                renderPlayerDashboard(*model.getPlayers()[0], model.getCurrentPlayerIndex() == 0, *model.getPlayers()[1], wonderCounter, *model.getBoard());
                 renderPyramid(model);
-                renderPlayerDashboard(*model.getPlayers()[1], model.getCurrentPlayerIndex() == 1, *model.getPlayers()[0], wonderCounter);
+                renderPlayerDashboard(*model.getPlayers()[1], model.getCurrentPlayerIndex() == 1, *model.getPlayers()[0], wonderCounter, *model.getBoard());
                 renderActionLog(model.getGameLog());
                 renderErrorMessage();
                 renderCommandHelp(state);
@@ -515,13 +516,13 @@ namespace SevenWondersDuel {
     //  详情页 (View Only Screens)
     // ==========================================================
 
-    void GameView::renderPlayerDetailFull(const Player& p, const Player& opp) {
+    void GameView::renderPlayerDetailFull(const Player& p, const Player& opp, const Board& board) {
         clearScreen();
         printLine('='); printCentered("DETAIL: " + p.getName());
 
         int discardValue = 2 + p.getCardCount(CardType::COMMERCIAL);
 
-        std::cout << " [1] BASIC: Coins " << p.getCoins() << " | VP " << p.getScore(opp) << "\n";
+        std::cout << " [1] BASIC: Coins " << p.getCoins() << " | VP " << ScoringManager::calculateScore(p, opp, board) << "\n";
         std::cout << "     \033[33mDiscard Value: " << discardValue << " coins\033[0m\n";
 
         std::cout << " [2] RESOURCES: " << formatResourcesCompact(p) << "\n";
@@ -604,9 +605,9 @@ namespace SevenWondersDuel {
                 else if (arg1 == "2") pIdx = 1;
 
                 if (pIdx != -1) {
-                    renderPlayerDetailFull(*model.getPlayers()[pIdx], *model.getPlayers()[1-pIdx]);
+                    renderPlayerDetailFull(*model.getPlayers()[pIdx], *model.getPlayers()[1-pIdx], *model.getBoard());
                 } else {
-                    renderPlayerDetailFull(*model.getCurrentPlayer(), *model.getOpponent());
+                    renderPlayerDetailFull(*model.getCurrentPlayer(), *model.getOpponent(), *model.getBoard());
                 }
                 continue;
             }

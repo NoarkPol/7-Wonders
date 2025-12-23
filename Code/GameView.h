@@ -80,7 +80,7 @@ namespace SevenWondersDuel {
         void renderProgressTokens(const std::vector<ProgressToken>& tokens, bool isBoxContext = false);
 
         // Dashboard
-		void renderPlayerDashboard(const Player& p, bool isCurrent, const Player& opp, int& wonderCounter, bool targetMode = false);
+		void renderPlayerDashboard(const Player& p, bool isCurrent, const Player& opp, int& wonderCounter, const Board& board, bool targetMode = false);
 
         void renderPyramid(const GameModel& model);
         void renderActionLog(const std::vector<std::string>& log);
@@ -88,7 +88,7 @@ namespace SevenWondersDuel {
         void renderErrorMessage();
 
         // 详情页
-		void renderPlayerDetailFull(const Player& p, const Player& opp);
+		void renderPlayerDetailFull(const Player& p, const Player& opp, const Board& board);
 		void renderCardDetail(const Card& c);
 		void renderWonderDetail(const Wonder& w);
 		void renderTokenDetail(ProgressToken t);

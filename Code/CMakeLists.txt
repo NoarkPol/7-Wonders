@@ -20,4 +20,8 @@ add_executable(7-Wonders main.cpp
         Agent.h
         GameView.cpp
         GameView.h
+        RulesEngine.cpp
+        RulesEngine.h
+        ScoringManager.cpp
+        ScoringManager.h
 )

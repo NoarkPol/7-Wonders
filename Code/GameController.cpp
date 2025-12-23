@@ -1,5 +1,7 @@
 #include "GameController.h"
 #include "DataLoader.h"
+#include "RulesEngine.h"
+#include "ScoringManager.h"
 #include <algorithm>
 #include <iostream>
 #include <random>
@@ -103,15 +105,15 @@ namespace SevenWondersDuel {
             model->victoryType = VictoryType::CIVILIAN;
 
             // 计算分数判定胜负
-            int s1 = model->players[0]->getScore(*model->players[1]);
-            int s2 = model->players[1]->getScore(*model->players[0]);
+            int s1 = ScoringManager::calculateScore(*model->players[0], *model->players[1], *model->board);
+            int s2 = ScoringManager::calculateScore(*model->players[1], *model->players[0], *model->board);
 
             if (s1 > s2) model->winnerIndex = 0;
             else if (s2 > s1) model->winnerIndex = 1;
             else {
                 // [FIX] 平局判定：蓝卡分
-                int blue1 = model->players[0]->getBlueCardScore(*model->players[1]);
-                int blue2 = model->players[1]->getBlueCardScore(*model->players[0]);
+                int blue1 = ScoringManager::calculateBluePoints(*model->players[0], *model->players[1]);
+                int blue2 = ScoringManager::calculateBluePoints(*model->players[1], *model->players[0]);
 
                 if (blue1 > blue2) {
                     model->winnerIndex = 0;
@@ -623,23 +625,11 @@ namespace SevenWondersDuel {
     }
 
     void GameController::checkVictoryConditions() {
-        if (std::abs(model->board->getMilitaryTrack().getPosition()) >= 9) {
+        VictoryResult result = RulesEngine::checkInstantVictory(*model->players[0], *model->players[1], *model->board);
+        if (result.isGameOver) {
             currentState = GameState::GAME_OVER;
-            if (model->board->getMilitaryTrack().getPosition() > 0) model->winnerIndex = 0;
-            else model->winnerIndex = 1;
-            model->victoryType = VictoryType::MILITARY;
-        }
-
-        for(int i=0; i<2; ++i) {
-            int distinctSymbols = 0;
-            for(auto const& [sym, count] : model->players[i]->getScienceSymbols()) {
-                if (sym != ScienceSymbol::NONE && count > 0) distinctSymbols++;
-            }
-            if (distinctSymbols >= 6) {
-                currentState = GameState::GAME_OVER;
-                model->winnerIndex = i;
-                model->victoryType = VictoryType::SCIENCE;
-            }
+            model->winnerIndex = result.winnerIndex;
+            model->victoryType = result.type;
         }
     }
 

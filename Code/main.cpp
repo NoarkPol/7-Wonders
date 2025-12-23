@@ -1,6 +1,7 @@
 #include "GameController.h"
 #include "GameView.h"
 #include "Agent.h"
+#include "ScoringManager.h"
 #include <iostream>
 #include <memory>
 #include <limits>
@@ -122,8 +123,8 @@ int main() {
         // 显示分数详情
         if (model.getVictoryType() == VictoryType::CIVILIAN) {
              std::cout << "Final Scores:\n";
-             std::cout << "  " << model.getPlayers()[0]->getName() << ": " << model.getPlayers()[0]->getScore(*model.getPlayers()[1]) << "\n";
-             std::cout << "  " << model.getPlayers()[1]->getName() << ": " << model.getPlayers()[1]->getScore(*model.getPlayers()[0]) << "\n";
+             std::cout << "  " << model.getPlayers()[0]->getName() << ": " << ScoringManager::calculateScore(*model.getPlayers()[0], *model.getPlayers()[1], *model.getBoard()) << "\n";
+             std::cout << "  " << model.getPlayers()[1]->getName() << ": " << ScoringManager::calculateScore(*model.getPlayers()[1], *model.getPlayers()[0], *model.getBoard()) << "\n";
         }
     }
 
