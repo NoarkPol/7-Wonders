@@ -1,4 +1,5 @@
 #include "ScoringManager.h"
+#include "Board.h"
 
 namespace SevenWondersDuel {
 

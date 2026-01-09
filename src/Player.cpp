@@ -157,7 +157,6 @@ namespace SevenWondersDuel {
                 break; // 没东西可减了
             }
         }
-        // -----------------------------
 
         // 如果扣除固定产出和科技减免后没缺口了，且金币够
         if (deficit.empty()) {
@@ -233,11 +232,6 @@ namespace SevenWondersDuel {
 
         if (it != m_builtCards.rend()) {
             Card* c = *it;
-            // Convert reverse iterator to forward iterator for erase
-            // rbegin is last element, rend is before first.
-            // base() of reverse_iterator returns the element *after* the one it points to.
-            // So if it points to element X, base() points to X+1.
-            // To get X, we need (it + 1).base()
             
             auto fwdIt = (it + 1).base();
             m_builtCards.erase(fwdIt);

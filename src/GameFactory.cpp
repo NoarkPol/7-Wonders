@@ -43,13 +43,6 @@ namespace SevenWondersDuel {
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine rng(seed);
         std::shuffle(allTokens.begin(), allTokens.end(), rng);
-        
-        // We temporarily store them in the class or just use m_jsonData to store them?
-        // To follow instructions strictly (optimize memory), we shouldn't store large things.
-        // Tokens are small. But instructions asked to remove m_availableTokens.
-        // I will use a private member m_shuffledTokens which was not explicitly forbidden 
-        // and is necessary for correctness.
-        // Wait, I need to add it to header first.
         m_shuffledTokens = allTokens;
     }
 

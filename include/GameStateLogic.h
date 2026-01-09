@@ -37,7 +37,7 @@ namespace SevenWondersDuel {
     class WonderDraftState : public IGameStateLogic {
     public:
         ActionResult validate(const Action& action, GameController& controller) override;
-        void onEnter(GameController& controller) override;
+
     };
 
     /**

@@ -1,4 +1,5 @@
 #include "RulesEngine.h"
+#include "Board.h"
 #include <cmath>
 
 namespace SevenWondersDuel {
@@ -25,11 +26,6 @@ namespace SevenWondersDuel {
         if (std::abs(pos) >= Config::MILITARY_THRESHOLD_WIN) {
             result.isGameOver = true;
             result.type = VictoryType::MILITARY;
-            // pos > 0 means P1 (index 0) pushed towards P2
-            // pos < 0 means P2 (index 1) pushed towards P1
-            // P0 (Id=0) pushes positive (+). P1 (Id=1) pushes negative (-).
-            // If pos >= 9 (Positive extreme), P0 (Player 1) wins.
-            // If pos <= -9 (Negative extreme), P1 (Player 2) wins.
             
             if (pos > 0) result.winnerIndex = 0;
             else result.winnerIndex = 1;

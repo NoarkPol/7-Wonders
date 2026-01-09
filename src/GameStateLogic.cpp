@@ -11,11 +11,6 @@ namespace SevenWondersDuel {
     //  WonderDraftState
     // ==========================================================
 
-    void WonderDraftState::onEnter(GameController& controller) {
-        // Logic when entering draft state?
-        // Currently handled in handleDraftWonder transitions, keeping minimal.
-    }
-
     ActionResult WonderDraftState::validate(const Action& action, GameController& controller) {
         ActionResult result;
         result.isValid = false;
